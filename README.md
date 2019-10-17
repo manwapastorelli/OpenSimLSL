@@ -1,4 +1,4 @@
-# OpenSimLSL
+# OpenSimLSL/OSSL
 A Collection Of OpenSim Scripts In LSL
 
 Some scripts in here will be trivial, some are much larger, they are all things I have found useful. 
