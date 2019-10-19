@@ -81,16 +81,15 @@ ProcessLastPeriodVisitors(string type)
     if (type == "DayOfMonth")
     { 
         list yesterdaysVisitors = todaysVisitors;
-        string totalVisitorsLine = "**Total Visitors = " + (string)llGetListLength(yesterdaysVisitors); //sets the line to add to the visitors list
+        
+        string visitorsUnique = "*Unique Visitors = " + (string)llGetListLength(yesterdaysVisitors);
+        string visitorsAll = "*All Visitors = " + (string)llGetListLength(yesterdaysVisitors);
+        yesterdaysVisitors += visitorsUnique; //adds the line above to the list
+        yesterdaysVisitors += visitorsAll; //adds the line above to the list
         string nameToMake = "Yesterday";
-        yesterdaysVisitors += totalVisitorsLine;
         if (llGetInventoryType(nameToMake) == INVENTORY_NOTECARD) llRemoveInventory(nameToMake);
         osMakeNotecard(nameToMake, yesterdaysVisitors); //save the notecard
-        integer notecardWritten = FALSE;
-        while (!notecardWritten)
-        {
-            if (llGetInventoryType(nameToMake) == INVENTORY_NOTECARD) notecardWritten = TRUE;
-        } 
+        EnsureNotecardWritten(nameToMake); 
         notecardsToProcess += nameToMake;
     }
     else if (type == "MonthOfYear")
@@ -124,16 +123,19 @@ ProcessVisitorsNotecard(string notecardName)
     for (lineIndex = 0; lineIndex < notecardLength; lineIndex++)
     {   //loops through the selected notecard
         currentLine = osGetNotecardLine(notecardName, lineIndex);
-        string firstChar = llGetSubString(currentLine, 0, 0);
+        string firstTwoChars = llGetSubString(currentLine, 0, 1);
         if (currentLine != "")
         {
-            if (firstChar == "*") //process this line as a total for notecard
+            if (firstTwoChars == "*A" || firstTwoChars == "*U") //process this line as a total for notecard
             {   //do this the long way, assume people are idiots and manually change an auto generated notecard. 
-                integer equalsIndex = llSubStringIndex (currentLine, "="); //get the position of the equals sign
-                string strVisitors = llGetSubString(currentLine, equalsIndex+1, -1); //everything after the equals sign
-                strVisitors = llStringTrim(strVisitors, STRING_TRIM); //remove any white space
-                integer visitors = (integer) strVisitors; //convert to an integer
-                totalVisitorsCalculation += visitors; //add value to total visitors calc figure
+                if (firstTwoChars == "*A")
+                {   //only process the all figures when adding together. 
+                    integer equalsIndex = llSubStringIndex (currentLine, "="); //get the position of the equals sign
+                    string strVisitors = llGetSubString(currentLine, equalsIndex+1, -1); //everything after the equals sign
+                    strVisitors = llStringTrim(strVisitors, STRING_TRIM); //remove any white space
+                    integer visitors = (integer) strVisitors; //convert to an integer
+                    totalVisitorsCalculation += visitors; //add value to total visitors calc figure
+                }   //close if first two charas are *A
             }//close if first char is an *
             else 
             { 
@@ -154,16 +156,18 @@ GenerateNewNoteCard(string notecardType)
     if (notecardType == "DayOfMonth") lastTimePeriod = lastDay;
     else if (notecardType == "MonthOfYear") lastTimePeriod = lastMonth;
     else if (notecardType == "Year") lastTimePeriod = lastYear;
-    string visitors = (string)llGetListLength(lastPeriodsVisitors);
-    string totalVisitorsLine = "**Total Visitors = " + visitors; //sets the line to add to the visitors list
-    //llOwnerSay("Debug:GenerateNotecard:NotecardType: " + notecardType + "  LastPeriodVisitorsList: " + llList2CSV(lastPeriodsVisitors));
-    lastPeriodsVisitors += totalVisitorsLine; //adds the line above to the list
+    string visitorsUnique = "*Unique Visitors = " + (string)llGetListLength(lastPeriodsVisitors);
+    string visitorsAll = "*All Visitors = " + (string)totalVisitorsCalculation;
+    lastPeriodsVisitors += visitorsUnique; //adds the line above to the list
+    lastPeriodsVisitors += visitorsAll; //adds the line above to the list
     string tail; 
     if (lastTimePeriod < 10) tail = "0" + (string)lastTimePeriod; //keep the tail to always be 2 characters 
     else tail = (string)lastTimePeriod; //set the tail string based on the day of the month yesterday
     string notecardName = notecardType + "-" + tail;
     if (llGetInventoryType(notecardName) == INVENTORY_NOTECARD) llRemoveInventory(notecardName);
     osMakeNotecard(notecardName, lastPeriodsVisitors); //save the notecard
+    EnsureNotecardWritten(notecardName);
+    lastPeriodsVisitors = [];
 }//close process new day 
 
 PopulateDaysAndMonthsNoteardLists(string callingMethod)
@@ -344,6 +348,15 @@ ProcessDetectedAvatars()
     }//close loop through detected list
 }//close process avatars in region 
 
+EnsureNotecardWritten(string notecardName)
+{   //holds the scrit in a loop untill the card is written
+    integer notecardWritten = FALSE;
+    while (!notecardWritten)
+    {   //if the status is not written come here
+        if (llGetInventoryType(notecardName) == INVENTORY_NOTECARD) notecardWritten = TRUE; //change to true if its written
+    }  //close while not written 
+}//close ensure notecard is written. 
+
 default
 {
     changed( integer change )
@@ -357,8 +370,8 @@ default
         SetUpListeners();
         //start fake test data
         //==========================
-        //lastYear = 2019;
-        //lastMonth = 10;
+        //lastYear = 2018;
+        //lastMonth = 9;
         //lastDay = 18;
         //==========================
         //end fake test data
