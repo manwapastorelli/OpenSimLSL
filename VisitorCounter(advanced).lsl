@@ -1,3 +1,50 @@
+/*
+BSD 3-Clause License
+Copyright (c) 2019, Sara Payne (Manwa Pastorelli in virtual worlds)
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+/*
+Covey Visitor Counter
+=====================
+1.  This is set as a volumetric item which both detects collissions and collects agent data sim wide on a timer. 
+2.  Throughout each day the unique visitors are recorded. 
+3.  At the end of each day those values are witten to a new notecard called DayOfMonth-** with the previous days date added. 
+4.  This happens every day untill the month changes, so if it starts at the beginning of the month there will be a full months worth of notecards
+5.  When the month changes a new note card for the moth is written by reading the contents of each day in the last month. This will give you a 
+    total number of visitors for the month as well as a list of unique visitors. 
+6. This will happen every month untill the year end is reached. 
+7. When a new year reaches, all the monthly notecards are read, again duplicates filtered from the list but the total visitors for the year is kept. 
+As the years pass you will have a notecard for each year showing the unique visitors to the region as well as the total number. 
+
+IMPORTANT CAVEAT!! -    O/S default settings limit notecard writing to just 255 lines. You could easily exceed this on a busy sim. Memory is also an
+                        important consideration. The standard O/S limits for scripts could easily run using this script while processing month/years.
+*/
+
+//User Changeable Variables
+integer timeInterval = 60; //how frequently the sim is checked for visitors
+//End User Changeable Variables
+
 list todaysVisitors; //list contains names and grid uri as CSV (uniquire visits in the day)
 list todaysVisitorsUUIDs;//list contains all unique UUIDS detected today. 
 key lastCollider;//uuid of the last avi to collide with this object
@@ -12,7 +59,6 @@ list admins;//list of people allowed to access the counters menu
 integer menuChannel; //channel the menu listens on
 integer menuChannelListen; //handle to turn the listener on and off
 key lastAdmin; //uuid of the last admin to use the menu, used to send time out warning
-integer timeInterval = 60; //how frequently the sim is checked for visitors
 integer menuListen; //used to aid in tracking the listener...shouldn't be needed working aorund OS bugs
 list notecardsToProcess; //used when processing a new month or year, temp storage of notecard names
  
