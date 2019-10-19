@@ -1,3 +1,4 @@
+/*
 BSD 3-Clause License
 Copyright (c) 2019, Sara Payne (Manwa Pastorelli in virtual worlds)
 All rights reserved.
@@ -21,3 +22,24 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+/*
+Covey Ensure Notecard Is Written method. 
+========================================
+
+This is not a full script, as such i have not added the whole thing, it is intended to be used as a method in the middle
+of another script. If you need to be sure that a notecard has been written before allowing the rest of your script to run
+just call this method. 
+
+Caveat!! Calling this method on a notecard which will never exist will leave the script in an never ending loop. 
+*/
+
+EnsureNotecardWritten(string notecardName)
+{   //holds the scrit in a loop untill the card is written
+    integer notecardWritten = FALSE;
+    while (!notecardWritten)
+    {   //if the status is not written come here
+        if (llGetInventoryType(notecardName) == INVENTORY_NOTECARD) notecardWritten = TRUE; //change to true if its written
+    }  //close while not written 
+}//close ensure notecard is written. 
