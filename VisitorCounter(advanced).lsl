@@ -248,8 +248,10 @@ ShowVisitors (key aviUUID)
     list notecardToMake = todaysVisitors;
     integer numberOfVisitorsToday = llGetListLength(notecardToMake);
     string notecardName = "Todays-Visitors";
-    string totalVisitorsLine = "**Total Visitors = " + (string)numberOfVisitorsToday; //sets the line to add to the visitors list
-    notecardToMake += totalVisitorsLine; //adds the line above to the list
+    string visitorsUnique = "*Unique Visitors = " + (string)numberOfVisitorsToday;
+    string visitorsAll = "*All Visitors = " + (string)numberOfVisitorsToday;
+    notecardToMake += visitorsUnique; //adds the line above to the list
+    notecardToMake += visitorsAll; //adds the line above to the list
     if (llGetInventoryType(notecardName) != -1)
     {   //if this notecard already exists delete it
         llRemoveInventory(notecardName);
