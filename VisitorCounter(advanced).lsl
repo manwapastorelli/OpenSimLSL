@@ -39,7 +39,6 @@ CheckDate()
 ProcessNewDay(integer day, integer month, integer year)
 {   //makes yesterdays visitors note card then resets the lists for today
     //llOwnerSay("Debug:ProcessNewDay: EnteredMethod");
-    totalVisitorsCalculation = 0; //reset total visitors calc to 0 ready for next time
     ProcessLastPeriodVisitors("DayOfMonth");
     GenerateNewNoteCard("DayOfMonth");
     lastDay = day; //make last day equal today ready for tomorrow
@@ -51,7 +50,6 @@ ProcessNewDay(integer day, integer month, integer year)
 ProcessNewMonth(integer month, integer year)
 {
     //llOwnerSay("Debug:ProcessNewMonth: EnteredMethod");
-    totalVisitorsCalculation = 0; //reset total visitors calc to 0 ready for next time
     PopulateDaysAndMonthsNoteardLists("ProcessNewMonth");//clear lists and generate new ones to work from
     ProcessLastPeriodVisitors("MonthOfYear");
     GenerateNewNoteCard("MonthOfYear");
@@ -66,7 +64,6 @@ ProcessNewMonth(integer month, integer year)
 ProcessNewYear(integer year)
 {
     //llOwnerSay("Debug:ProcessNewYear: EnteredMethod");
-    totalVisitorsCalculation = 0; //reset total visitors calc to 0 ready for next time
     PopulateDaysAndMonthsNoteardLists("ProcessNewYear");//clear lists and generate new ones to work from
     //llOwnerSay("Debug:monthsOfYearNotecards: " + llList2CSV(monthsOfYearNotecards));
     ProcessLastPeriodVisitors("Year");
@@ -84,12 +81,16 @@ ProcessLastPeriodVisitors(string type)
     if (type == "DayOfMonth")
     { 
         list yesterdaysVisitors = todaysVisitors;
+        
         string visitorsUnique = "*Unique Visitors = " + (string)llGetListLength(yesterdaysVisitors);
+        string visitorsAll = "*All Visitors = " + (string)llGetListLength(yesterdaysVisitors);
         yesterdaysVisitors += visitorsUnique; //adds the line above to the list
-        if (llGetInventoryType("Yesterday") == INVENTORY_NOTECARD) llRemoveInventory("Yesterday");
-        osMakeNotecard("Yesterday", yesterdaysVisitors); //save the notecard
-        EnsureNotecardWritten("Yesterday"); 
-        notecardsToProcess += "Yesterday";
+        yesterdaysVisitors += visitorsAll; //adds the line above to the list
+        string nameToMake = "Yesterday";
+        if (llGetInventoryType(nameToMake) == INVENTORY_NOTECARD) llRemoveInventory(nameToMake);
+        osMakeNotecard(nameToMake, yesterdaysVisitors); //save the notecard
+        EnsureNotecardWritten(nameToMake); 
+        notecardsToProcess += nameToMake;
     }
     else if (type == "MonthOfYear")
     {
@@ -102,13 +103,13 @@ ProcessLastPeriodVisitors(string type)
         monthsOfYearNotecards = [];//clear to keep memory down
     }
     lastPeriodsVisitors = []; //ensure the list is clear at the start 
-    integer numberOfNotecardsToProcess = llGetListLength(notecardsToProcess);
-    integer noteCardIndex;
+    integer listLength = llGetListLength(notecardsToProcess);
+    integer listIndex;
     totalVisitorsCalculation = 0;
     //llOwnerSay("Debug:ProcessLastPeriodVisitors: " + llList2CSV(lastPeriodsVisitors));
-    for (noteCardIndex = numberOfNotecardsToProcess-1; noteCardIndex >= 0; noteCardIndex--)
+    for (listIndex = listLength-1; listIndex >= 0; listIndex--)
     {
-        string notecardName = llList2String(notecardsToProcess, noteCardIndex);
+        string notecardName = llList2String(notecardsToProcess, listIndex);
         ProcessVisitorsNotecard(notecardName); //adds contentents to the period list and total visitors figures preventing duplicates in the list
         llRemoveInventory(notecardName);
     } 
