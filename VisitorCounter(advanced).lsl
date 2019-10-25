@@ -12,7 +12,7 @@ list admins;//list of people allowed to access the counters menu
 integer menuChannel; //channel the menu listens on
 integer menuChannelListen; //handle to turn the listener on and off
 key lastAdmin; //uuid of the last admin to use the menu, used to send time out warning
-integer timeInterval = 60; //how frequently the sim is checked for visitors
+integer timeInterval = 30; //how frequently the sim is checked for visitors
 integer menuListen; //used to aid in tracking the listener...shouldn't be needed working aorund OS bugs
 list notecardsToProcess; //used when processing a new month or year, temp storage of notecard names
  
@@ -31,14 +31,12 @@ CheckDate()
     integer year = GetDate("Year");
     integer month = GetDate("Month");
     integer day = GetDate("Day");
-    //llOwnerSay("Debug:CheckDate:LastDates:D-M-Y: "+ (string)lastDay + " - " + (string)lastMonth + " - " + (string)lastYear);
-    //llOwnerSay("Debug:CheckDate:TodayDates:D-M-Y: "+ (string)day + " - " + (string)month + " - " + (string)year);
     if (day != lastDay) ProcessNewDay(day, month, year);
 }//close check the date 
 
 ProcessNewDay(integer day, integer month, integer year)
 {   //makes yesterdays visitors note card then resets the lists for today
-    //llOwnerSay("Debug:ProcessNewDay: EnteredMethod");
+    totalVisitorsCalculation = 0; //reset total visitors calc to 0 ready for next time
     ProcessLastPeriodVisitors("DayOfMonth");
     GenerateNewNoteCard("DayOfMonth");
     lastDay = day; //make last day equal today ready for tomorrow
@@ -49,7 +47,7 @@ ProcessNewDay(integer day, integer month, integer year)
  
 ProcessNewMonth(integer month, integer year)
 {
-    //llOwnerSay("Debug:ProcessNewMonth: EnteredMethod");
+    totalVisitorsCalculation = 0; //reset total visitors calc to 0 ready for next time
     PopulateDaysAndMonthsNoteardLists("ProcessNewMonth");//clear lists and generate new ones to work from
     ProcessLastPeriodVisitors("MonthOfYear");
     GenerateNewNoteCard("MonthOfYear");
@@ -63,9 +61,8 @@ ProcessNewMonth(integer month, integer year)
 
 ProcessNewYear(integer year)
 {
-    //llOwnerSay("Debug:ProcessNewYear: EnteredMethod");
+    totalVisitorsCalculation = 0; //reset total visitors calc to 0 ready for next time
     PopulateDaysAndMonthsNoteardLists("ProcessNewYear");//clear lists and generate new ones to work from
-    //llOwnerSay("Debug:monthsOfYearNotecards: " + llList2CSV(monthsOfYearNotecards));
     ProcessLastPeriodVisitors("Year");
     GenerateNewNoteCard("Year");
     lastYear = year;
@@ -76,21 +73,18 @@ ProcessNewYear(integer year)
 
 ProcessLastPeriodVisitors(string type)
 {
-    //llOwnerSay("Debug:ProcessLastPeriodVisitors: " + type);
     notecardsToProcess = [];
     if (type == "DayOfMonth")
     { 
         list yesterdaysVisitors = todaysVisitors;
-        
         string visitorsUnique = "*Unique Visitors = " + (string)llGetListLength(yesterdaysVisitors);
         string visitorsAll = "*All Visitors = " + (string)llGetListLength(yesterdaysVisitors);
         yesterdaysVisitors += visitorsUnique; //adds the line above to the list
         yesterdaysVisitors += visitorsAll; //adds the line above to the list
-        string nameToMake = "Yesterday";
-        if (llGetInventoryType(nameToMake) == INVENTORY_NOTECARD) llRemoveInventory(nameToMake);
-        osMakeNotecard(nameToMake, yesterdaysVisitors); //save the notecard
-        EnsureNotecardWritten(nameToMake); 
-        notecardsToProcess += nameToMake;
+        if (llGetInventoryType("Yesterday") == INVENTORY_NOTECARD) llRemoveInventory("Yesterday");
+        osMakeNotecard("Yesterday", yesterdaysVisitors); //save the notecard
+        EnsureNotecardWritten("Yesterday"); 
+        notecardsToProcess += "Yesterday";
     }
     else if (type == "MonthOfYear")
     {
@@ -103,13 +97,12 @@ ProcessLastPeriodVisitors(string type)
         monthsOfYearNotecards = [];//clear to keep memory down
     }
     lastPeriodsVisitors = []; //ensure the list is clear at the start 
-    integer listLength = llGetListLength(notecardsToProcess);
-    integer listIndex;
+    integer numberOfNotecardsToProcess = llGetListLength(notecardsToProcess);
+    integer noteCardIndex;
     totalVisitorsCalculation = 0;
-    //llOwnerSay("Debug:ProcessLastPeriodVisitors: " + llList2CSV(lastPeriodsVisitors));
-    for (listIndex = listLength-1; listIndex >= 0; listIndex--)
+    for (noteCardIndex = numberOfNotecardsToProcess-1; noteCardIndex >= 0; noteCardIndex--)
     {
-        string notecardName = llList2String(notecardsToProcess, listIndex);
+        string notecardName = llList2String(notecardsToProcess, noteCardIndex);
         ProcessVisitorsNotecard(notecardName); //adds contentents to the period list and total visitors figures preventing duplicates in the list
         llRemoveInventory(notecardName);
     } 
@@ -134,7 +127,7 @@ ProcessVisitorsNotecard(string notecardName)
                     string strVisitors = llGetSubString(currentLine, equalsIndex+1, -1); //everything after the equals sign
                     strVisitors = llStringTrim(strVisitors, STRING_TRIM); //remove any white space
                     integer visitors = (integer) strVisitors; //convert to an integer
-                    totalVisitorsCalculation += visitors; //add value to total visitors calc figure
+                    totalVisitorsCalculation += visitors; //add value to total visitors calc figure      
                 }   //close if first two charas are *A
             }//close if first char is an *
             else 
@@ -151,7 +144,6 @@ ProcessVisitorsNotecard(string notecardName)
 
 GenerateNewNoteCard(string notecardType)
 {   //saves yesterdays vistors, clears the lists and sets last day to todays day ;
-    //llOwnerSay("Debug:GenerateNewCard:EnteredMethod: Type: " + notecardType);
     integer lastTimePeriod; 
     if (notecardType == "DayOfMonth") lastTimePeriod = lastDay;
     else if (notecardType == "MonthOfYear") lastTimePeriod = lastMonth;
@@ -172,7 +164,6 @@ GenerateNewNoteCard(string notecardType)
 
 PopulateDaysAndMonthsNoteardLists(string callingMethod)
 {   //goes through the inventory making lists of the notecard names for days of the month and months of the year
-    //llOwnerSay("Debug:PopulateDaysMonthsLists:EnteredMethod: CalledFrom: " + callingMethod);
     daysOfMonthNotecards = []; //ensure the list starts empty
     monthsOfYearNotecards = []; //ensure the list starts empty
     integer totalNotecards = llGetInventoryNumber(INVENTORY_NOTECARD);
@@ -181,26 +172,20 @@ PopulateDaysAndMonthsNoteardLists(string callingMethod)
     {   //loops through all notecards and makes a list of the day of the month notecards
         string notecardName = llGetInventoryName(INVENTORY_NOTECARD, notecardIndex);
         integer hyphenIndex = llSubStringIndex(notecardName, "-");
-        //llOwnerSay("Debug:PopulateCardLists:NotecardName: " + notecardName);
-        //llOwnerSay("Debug:" + notecardName + ":HyphenIndex: " + (string)hyphenIndex);
         if (hyphenIndex >= 0)
         {   //only come here if the name contains a hypen, otherwise ignore as its not part of the system
             string notecardType = llGetSubString(notecardName, 0, hyphenIndex-1); //everything before the hypen
             if (notecardType == "DayOfMonth") 
             {
-                //llOwnerSay("Debug:" + notecardName +  " added to daysOfMonthList");
                 daysOfMonthNotecards += notecardName; //add this card to the days of the month list
             }
             else if (notecardType == "MonthOfYear") 
             {
-                //llOwnerSay("Debug:" + notecardName +  " added to monthsOfYearList");
                 monthsOfYearNotecards += notecardName; //add this card to the months of the year list
             }
             //no else as its not part of the system so gets ignored
         }//close if its a notecard belonging to the ones we need to processs
     }//close loop through all notecards
-    //llOwnerSay("Debug:DaysOfMonthList: " + llList2CSV(daysOfMonthNotecards));
-    //llOwnerSay("Debug:MonthsOfYearList: " + llList2CSV(monthsOfYearNotecards));
 }//populate days and months lists.  
 
 string ParseName(string detectedName)
@@ -214,7 +199,6 @@ integer periodIndex = llSubStringIndex(detectedName, ".");//get the index positi
 list nameSegments;
 if ((periodIndex >= 0) && (atIndex >= 0))
     {   //the detected name contains both an "@"" and "." so this avi is a hypergrid visitor
-        //llOwnerSay("HyperGridAviDetected");
         nameSegments = llParseString2List(detectedName,[" "],["@"]);//split the dected name into two list elements
         string hGGridName = llList2String(nameSegments,0); //everything before the @ 
         nameSegments = llParseStringKeepNulls(hGGridName, [" "], ["."]); //split the hg name into two list elements
@@ -263,12 +247,9 @@ ShowVisitors (key aviUUID)
     {   //loops through all notecards in the inventory. 
         string notecardToProcess = llGetInventoryName(INVENTORY_NOTECARD, notecardIndex);
         integer hyphenIndex = llSubStringIndex(notecardToProcess, "-");
-        //llOwnerSay("Debug: GenerateDeliveryList: CheckingName: " + notecardToProcess);
-        //llOwnerSay("Debug: hypenIndex: " + (string)hyphenIndex);
         if (hyphenIndex != -1)
         {   //ignore all notecards which do not have a hyphen in them
             string notecardType  = llGetSubString(notecardToProcess, 0, hyphenIndex-1);
-            //llOwnerSay("Debug: NotecardType: " + notecardType);
             if (notecardType == "DayOfMonth" || notecardType == "MonthOfYear" || notecardType == "Year" || "Todays")
             {   //only process notecards starting with "DayOfMonth, MonthOfYear or Year
                 itemsToDeliver += notecardToProcess;
@@ -314,14 +295,14 @@ ReadConfigCards(string notecardName)
             {   //come here if the above condition is not met
                 if ( (currentLine != "") && (firstChar != "#") && (equalsIndex == -1))
                 {   // if the line is not blank and it does not begin with a #, and there is no = sign send an error telling the user which line is invalid. 
-                    llOwnerSay("Line number: " + (string)index + " is malformed. It is not blank, and does not begin with a #, yet it contains no equals sign.");
+                    //llOwnerSay("Line number: " + (string)index + " is malformed. It is not blank, and does not begin with a #, yet it contains no equals sign.");
                 }//close line is invalid
             }//close invalid line
         }
     }//close if the notecard exists
     else 
     {   //the named notecard does not exist, send an error to the user. 
-        llOwnerSay ("The notecard called " + notecardName + " is missing, auto generating one with just the owner added");
+        //llOwnerSay ("The notecard called " + notecardName + " is missing, auto generating one with just the owner added");
         list newNotecardContents = ["# Allowed Admins", llGetOwner()];
         osMakeNotecard(notecardName, newNotecardContents); //save the notecard
     }//close error the notecard does not exist
@@ -330,18 +311,14 @@ ReadConfigCards(string notecardName)
 ProcessDetectedAvatars()
 {   //processes avatars detected by either the region list or collission event. 
     list avatarsInRegion = llGetAgentList(AGENT_LIST_REGION, []); //generates a list of all avatar uuids in the region
-    //llOwnerSay("Debug: AvatarsInRegion: " +  llList2CSV(avatarsInRegion));
     integer avatarIndex;
     for (avatarIndex = 0; avatarIndex < llGetListLength(avatarsInRegion); avatarIndex++)
     {   //loop through all detected avis
         key uuidToCheck = llList2Key(avatarsInRegion, avatarIndex); //avi we are currently dealing with
         string aviName = llKey2Name(uuidToCheck);
         string cleanName = ParseName (aviName); //get avi name without hg stuff if present
-        //llOwnerSay("Debug:DetectedAviName: " + aviName);
-        //llOwnerSay("Debug:CleanAviName: " + cleanName);
         if (!(~llListFindList(todaysVisitorsUUIDs, (list)uuidToCheck)))
         {   //if avi has not already visited today add them to both daily visitors and UUID lists
-            //llOwnerSay("Debug:ProcessDetected: " + cleanName + " added to the visitors list");
             todaysVisitorsUUIDs += uuidToCheck; //add this uuid to the list of visitors today, has to be uuid as names could match with hg visitors
             string homeUri = osGetAvatarHomeURI(uuidToCheck);//get the avatars home grid
             string newVisitor = cleanName + "," + homeUri; //this is the line we add to the visitors list
@@ -373,8 +350,8 @@ default
         //start fake test data
         //==========================
         //lastYear = 2018;
-        //lastMonth = 9;
-        //lastDay = 18;
+        //lastMonth = 09;
+        //lastDay = 23;
         //==========================
         //end fake test data
         lastYear = GetDate("Year");
@@ -404,7 +381,6 @@ default
          key toucher = llDetectedKey(0);
          if (~llListFindList(admins, (list)toucher))
          {  //if the toucher is on the admin list deliver the menu
-             //llOwnerSay("Debug: Toucher Found in admin list");
              lastAdmin = toucher; //store the last admin toucher incase of a time out. 
              llListenControl (menuChannelListen, TRUE); //turns on listeners for main menu channel
              menuListen = TRUE;
@@ -435,4 +411,4 @@ default
         ProcessDetectedAvatars(); //scan the sim and process all found avis
         CheckDate(); //check the date to see if its a new day, if it is process the changes (includes month/year if they also changed)
     }//close timer
-}//close state default
+}//close state default 
