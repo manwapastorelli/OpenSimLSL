@@ -15,7 +15,8 @@ key lastAdmin; //uuid of the last admin to use the menu, used to send time out w
 integer timeInterval = 30; //how frequently the sim is checked for visitors
 integer menuListen; //used to aid in tracking the listener...shouldn't be needed working aorund OS bugs
 list notecardsToProcess; //used when processing a new month or year, temp storage of notecard names
- 
+integer debug = FALSE;
+  
 integer GetDate (string dayMonthYear) 
 {   //fetches the date, and breaks it down into component parts returning the requested prt
     list dateComponents = llParseString2List(llGetDate(), ["-"], []);
@@ -250,7 +251,7 @@ ShowVisitors (key aviUUID)
         if (hyphenIndex != -1)
         {   //ignore all notecards which do not have a hyphen in them
             string notecardType  = llGetSubString(notecardToProcess, 0, hyphenIndex-1);
-            if (notecardType == "DayOfMonth" || notecardType == "MonthOfYear" || notecardType == "Year" || "Todays")
+            if (notecardType == "DayOfMonth" || notecardType == "MonthOfYear" || notecardType == "Year" || notecardType == "Todays")
             {   //only process notecards starting with "DayOfMonth, MonthOfYear or Year
                 itemsToDeliver += notecardToProcess;
             }//close if name matechs our criteria
@@ -259,7 +260,22 @@ ShowVisitors (key aviUUID)
     llGiveInventoryList(aviUUID, llGetObjectName(), itemsToDeliver);
     llListenControl (menuChannelListen, FALSE); //turns off listeners for main menu channel
     menuListen = FALSE;
+    llRemoveInventory(notecardName);
+    CleanTodaysVisitorsList(); //clean up pass by reference mess    
 }//close show visitors.
+
+CleanTodaysVisitorsList()
+{   //this list is passed by refernece earlier, either we clean it now or we do a loop copy earlier
+    integer index = llGetListLength(todaysVisitors)-1;
+    for (; index >=0; index--)
+    {
+        string toTest = llList2String(todaysVisitors,index);
+        if (llGetSubString(toTest,0,0) == "*")
+        {   //removes unique visitos and all visitors lines which get added earlier.
+            todaysVisitors = llDeleteSubList(todaysVisitors, index,index);
+        }
+    }
+}//close clean todays visitors list. 
 
 ProcessInstructionLine(string instruction, string data)
 {   //we only need the data, add it to the admins list
@@ -295,7 +311,7 @@ ReadConfigCards(string notecardName)
             {   //come here if the above condition is not met
                 if ( (currentLine != "") && (firstChar != "#") && (equalsIndex == -1))
                 {   // if the line is not blank and it does not begin with a #, and there is no = sign send an error telling the user which line is invalid. 
-                    //llOwnerSay("Line number: " + (string)index + " is malformed. It is not blank, and does not begin with a #, yet it contains no equals sign.");
+                    llOwnerSay("Line number: " + (string)index + " is malformed. It is not blank, and does not begin with a #, yet it contains no equals sign.");
                 }//close line is invalid
             }//close invalid line
         }
@@ -303,7 +319,8 @@ ReadConfigCards(string notecardName)
     else 
     {   //the named notecard does not exist, send an error to the user. 
         //llOwnerSay ("The notecard called " + notecardName + " is missing, auto generating one with just the owner added");
-        list newNotecardContents = ["# Allowed Admins", llGetOwner()];
+        string ownerAdmin = "Admin = " + (string)llGetOwner();
+        list newNotecardContents = ["# Allowed Admins", ownerAdmin];
         osMakeNotecard(notecardName, newNotecardContents); //save the notecard
     }//close error the notecard does not exist
 }//close read config card. 
@@ -323,6 +340,7 @@ ProcessDetectedAvatars()
             string homeUri = osGetAvatarHomeURI(uuidToCheck);//get the avatars home grid
             string newVisitor = cleanName + "," + homeUri; //this is the line we add to the visitors list
             todaysVisitors += newVisitor;//add the line abive to todays visitors list. 
+            if (debug) llOwnerSay("Debug:ProcessDetectedAvatars:" + newVisitor + "added to todays visitors list");
         }//close if not on the list already
     }//close loop through detected list
 }//close process avatars in region 
@@ -350,13 +368,14 @@ default
         //start fake test data
         //==========================
         //lastYear = 2018;
-        //lastMonth = 09;
-        //lastDay = 23;
+        //lastMonth = 11;
+        //lastDay = 22;
         //==========================
         //end fake test data
         lastYear = GetDate("Year");
         lastMonth = GetDate("Month");
         lastDay = GetDate("Day");
+        ReadConfigCards("Admin");
         llSetTimerEvent(timeInterval); //every 30 mins
     }//close state entry
 
