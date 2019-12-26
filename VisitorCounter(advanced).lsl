@@ -9,13 +9,14 @@ list monthsOfYearNotecards; //used while processing change of year
 integer totalVisitorsCalculation; //used while processing change of month
 list lastPeriodsVisitors; //used while processing change of month 
 list admins;//list of people allowed to access the counters menu
+list ignore;//list of people who will not be counted by the visitor counter. 
 integer menuChannel; //channel the menu listens on
 integer menuChannelListen; //handle to turn the listener on and off
 key lastAdmin; //uuid of the last admin to use the menu, used to send time out warning
 integer timeInterval = 30; //how frequently the sim is checked for visitors
 integer menuListen; //used to aid in tracking the listener...shouldn't be needed working aorund OS bugs
 list notecardsToProcess; //used when processing a new month or year, temp storage of notecard names
-integer debug = FALSE;
+integer debug = TRUE;
   
 integer GetDate (string dayMonthYear) 
 {   //fetches the date, and breaks it down into component parts returning the requested prt
@@ -277,9 +278,22 @@ CleanTodaysVisitorsList()
     }
 }//close clean todays visitors list. 
 
-ProcessInstructionLine(string instruction, string data)
+ProcessInstructionLine(string instruction, string data, string notecardName)
 {   //we only need the data, add it to the admins list
-    admins += data; 
+    if (notecardName == "Admin") 
+    {
+        if (!(~llListFindList(admins, (list)data)))
+        {
+            admins += data;
+        }
+    }
+    else if (notecardName == "Ignore") 
+    {
+        if (!(~llListFindList(ignore, (list)data)))
+        {
+            ignore +=data;
+        }
+    }
 }//close process instruction line
 
 string CleanUpString(string inputString)
@@ -305,7 +319,7 @@ ReadConfigCards(string notecardName)
                 string data = llGetSubString(currentLine, equalsIndex+1, -1); //everything after the equals sign    
                 instruction = CleanUpString (instruction); //sends the instruvtion to the cleanup method to remove white space and turn to lower case
                 data = CleanUpString (data); //sends the data to the cleanup method to remove white space and turn to lower case
-                ProcessInstructionLine(instruction, data); //sends the instruction and the data to the Process instruction method
+                ProcessInstructionLine(instruction, data, notecardName); //sends the instruction and the data to the Process instruction method
             }//close if the line is valid
             else
             {   //come here if the above condition is not met
@@ -319,11 +333,18 @@ ReadConfigCards(string notecardName)
     else 
     {   //the named notecard does not exist, send an error to the user. 
         //llOwnerSay ("The notecard called " + notecardName + " is missing, auto generating one with just the owner added");
-        string ownerAdmin = "Admin = " + (string)llGetOwner();
-        list newNotecardContents = ["# Allowed Admins", ownerAdmin];
-        osMakeNotecard(notecardName, newNotecardContents); //save the notecard
+        GenerateMissingConfigCard(notecardName);
+        
     }//close error the notecard does not exist
-}//close read config card. 
+}//close read config card.
+
+GenerateMissingConfigCard(string notecardName)
+{
+    string dataToAdd = notecardName + " = " + (string)llGetOwner();
+    string title = "# " + notecardName + "'s" ;
+    list newNotecardContents = [title, dataToAdd];
+    osMakeNotecard(notecardName, newNotecardContents); //save the notecard
+} 
 
 ProcessDetectedAvatars()
 {   //processes avatars detected by either the region list or collission event. 
@@ -334,14 +355,22 @@ ProcessDetectedAvatars()
         key uuidToCheck = llList2Key(avatarsInRegion, avatarIndex); //avi we are currently dealing with
         string aviName = llKey2Name(uuidToCheck);
         string cleanName = ParseName (aviName); //get avi name without hg stuff if present
-        if (!(~llListFindList(todaysVisitorsUUIDs, (list)uuidToCheck)))
-        {   //if avi has not already visited today add them to both daily visitors and UUID lists
-            todaysVisitorsUUIDs += uuidToCheck; //add this uuid to the list of visitors today, has to be uuid as names could match with hg visitors
-            string homeUri = osGetAvatarHomeURI(uuidToCheck);//get the avatars home grid
-            string newVisitor = cleanName + "," + homeUri; //this is the line we add to the visitors list
-            todaysVisitors += newVisitor;//add the line abive to todays visitors list. 
-            if (debug) llOwnerSay("Debug:ProcessDetectedAvatars:" + newVisitor + "added to todays visitors list");
-        }//close if not on the list already
+        if (llDetectedType(avatarIndex) != 0)
+        {
+            if (!(~llListFindList(ignore, (list)uuidToCheck)))
+            {   //if the avi is not on the ignore list come here
+                if (debug) llOwnerSay("Debug:ProcessDetectedAvis: " + uuidToCheck + " is not on the ignore list"); 
+                if (!(~llListFindList(todaysVisitorsUUIDs, (list)uuidToCheck)))
+                {   //if avi has not already visited today add them to both daily visitors and UUID lists
+                    todaysVisitorsUUIDs += uuidToCheck; //add this uuid to the list of visitors today, has to be uuid as names could match with hg visitors
+                    string homeUri = osGetAvatarHomeURI(uuidToCheck);//get the avatars home grid
+                    string newVisitor = cleanName + "," + homeUri; //this is the line we add to the visitors list
+                    todaysVisitors += newVisitor;//add the line abive to todays visitors list. 
+                    if (debug) llOwnerSay("Debug:ProcessDetectedAvatars:" + newVisitor + "added to todays visitors list");
+                }//close if not on the list already
+            } 
+        }
+        
     }//close loop through detected list
 }//close process avatars in region 
 
@@ -376,6 +405,7 @@ default
         lastMonth = GetDate("Month");
         lastDay = GetDate("Day");
         ReadConfigCards("Admin");
+        ReadConfigCards("Ignore");
         llSetTimerEvent(timeInterval); //every 30 mins
     }//close state entry
 
