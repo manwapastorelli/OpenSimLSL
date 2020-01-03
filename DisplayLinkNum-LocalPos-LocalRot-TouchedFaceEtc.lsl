@@ -26,37 +26,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //Touch anywhere on an object to get details about where you touched, ie link number, face number, uv position etc
 
-list sze;
-list local_pos;
-vector Size;
-vector local_Position;
-integer i;
-integer j;
-integer linkNo;
-list local_rot;
-rotation local_rotation;
-integer TouchedFace;
-vector TouchedUVPos;
- 
 default
 {
     touch_start(integer total_number)
     {   
-        linkNo = llDetectedLinkNumber(0);
-        TouchedFace = llDetectedTouchFace(0);
-        TouchedUVPos = llDetectedTouchUV(0);
-        local_pos = llGetLinkPrimitiveParams(linkNo, [ PRIM_POS_LOCAL ]);
-        local_rot = llGetLinkPrimitiveParams(linkNo, [ PRIM_ROT_LOCAL ]);
-        local_Position =(llList2Vector(local_pos,i));
-        local_rotation =(llList2Rot(local_rot,j)) ;
-        sze = llGetLinkPrimitiveParams(linkNo, [ PRIM_SIZE ]);
-        Size =(llList2Vector (sze,i));
-        local_Position = llList2Vector(local_pos,i);
+        integer linkNo = llDetectedLinkNumber(0);
+        integer touchedFace = llDetectedTouchFace(0);
+        vector touchedUVPos = llDetectedTouchUV(0);
+        list primInfo = llGetLinkPrimitiveParams(linkNo,    
+            [  
+                PRIM_POS_LOCAL, 
+                PRIM_ROT_LOCAL, 
+                PRIM_SIZE, 
+                PRIM_TEXTURE, touchedFace 
+            ]);
+        vector localPosition = llList2Vector(primInfo,0);
+        rotation localRotation = llList2Rot(primInfo,1) ;
+        vector primSize = llList2Vector(primInfo,2);
+        string faceTexture = llList2String(primInfo, 3);
         llSay(0, " Link No: " +(string)linkNo + 
-                 "\n Face No: " + (string)TouchedFace + 
-                 "\n UV Pos: " + (string)TouchedUVPos +  
-                 "\n local pos " + (string)local_Position +     
-                 "\n local rotatoin " + (string)local_rotation  + 
-                 "\n Size " + (string)Size);
+                 "\n Face No: " + (string)touchedFace +
+                 "\n Texture: " + faceTexture +  
+                 "\n UV Pos: " + (string)touchedUVPos +  
+                 "\n local pos " + (string)localPosition +     
+                 "\n local rotatoin " + (string)localRotation  + 
+                 "\n Size " + (string)primSize);
     }
-} 
+}
