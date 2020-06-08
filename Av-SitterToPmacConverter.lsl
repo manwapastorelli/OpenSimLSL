@@ -27,7 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*
 INSTRUCTIONS
 ============
-Add the script into a prim which contains an AV-Sitter positions notecard (AVpos). Progress is indicated in local chat along with a finish notification. New PMAC menu cards are created in the item inventory. 
+Simply add the script into a prim which contains a AVpos notecard. It will convert those cards into PMAC menu cards.
 
 IMPORTANT
 =========
@@ -51,7 +51,7 @@ string AvPosCardName = "AVpos"; //name of the Av-sitter positions card
 integer debug = FALSE; //turns this on to see debug output, this generates a LOT of local chat output
 //if you use the debug option it's suggested you comment them out section by sec
    
-ConvertRotations()
+ConvertRotationsAndFixOffset()
 {   //AvSitter uses x,y,z rotations, PMAC uses quaternion rotations, so convert them. 
     list tempList = [];
     integer lineNumber;
@@ -62,9 +62,10 @@ ConvertRotations()
         string noTimes = RemoveTimes(initial);
         integer braceIndex = llSubStringIndex(noTimes, "}");
         string fixedRotation;
+        string fixedOffset;
         if (braceIndex != -1)
         {   //only deal with lines wich contain a } (pos/rot line)
-            fixedRotation = ConvertLineToRotations(noTimes); //convert this line to real rotations
+            fixedRotation = ConvertLineToRotationsAndFixOffset(noTimes); //convert this line to real rotations
         }
         else 
         {   //only deal with lines that do not contain a } (pos/rot line)
@@ -119,13 +120,14 @@ list ReverseListOrder(list inputList)
     return reverseList;
 }
 
-string ConvertLineToRotations (string inputString)
+string ConvertLineToRotationsAndFixOffset (string inputString)
 {   //takes in the AVpos format and outputs PMAC format
     string name = "{"+ NameFromPositionsLine(inputString) + "}";
     vector posVec = (vector)PosFromPositionsLine(inputString);
     vector rotVec = (vector)RotFromPositionsLine (inputString);
+    vector fixedOffset = posVec - <0,0,0.3>;
     rotation rotRot = llEuler2Rot(rotVec * DEG_TO_RAD); //the actual conversion
-    string fixedString = name + (string)posVec + (string)rotRot;
+    string fixedString = name + (string)fixedOffset + (string)rotRot;
     return fixedString;
 }
 
@@ -932,7 +934,7 @@ default
         else
         {
             llOwnerSay("Conversion Started");
-            ConvertRotations();
+            ConvertRotationsAndFixOffset();
             SplitIntoSitters();
             llOwnerSay("Sorting singles poses");
             FixAndCombineSinglePoses();
