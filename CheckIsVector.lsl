@@ -29,8 +29,7 @@ Check If A User Input is a Vector
 ===================================
 Any time you need to take user input it is paramount you check they have actually put something sensible. 
 All user input in Opensim comes in the form of a string, either from a notecard, listening to chat or a text box. 
-This fuction takes that user input and validates it as being valid to type cast (convert) to a rotation. (quaternions not Euler).
-
+This fuction takes that user input and validates it as being valid to type cast (convert) to a vector.
 Caveat - Only works in base 10 (decimal);
 */
 
