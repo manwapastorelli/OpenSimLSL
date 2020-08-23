@@ -25,7 +25,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 /*
-Check If A User Input is a Rotation
+Check If A User Input is a Vector
 ===================================
 Any time you need to take user input it is paramount you check they have actually put something sensible. 
 All user input in Opensim comes in the form of a string, either from a notecard, listening to chat or a text box. 
@@ -89,7 +89,7 @@ integer CheckIsVector (string inputString)
         if (strXIsFloat && strYIsFloat && strZIsFloat) isVector  = TRUE; //if all values are floats then this can be type cast into a rotation, return true
         else isVector  = FALSE; //not all values inside the <> are floats, so this can not be type cast to a rotation, set false
     }//close if containing characters are <>
-    else isVector = FALSE; //first and last characters did not match rotation formatting, so it can't be a valid rotation, set to false
+    else isVector = FALSE; //first and last characters did not match vector formatting, so it can't be a valid rotation, set to false
     return isVector; //returns true/false
 }
 
